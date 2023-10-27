@@ -1,0 +1,10 @@
+version: 0.0.1
+params:
+  workdir: "./"
+
+components:
+  include:
+    - "eks"
+    - "rds"
+    - "vpc"
+
