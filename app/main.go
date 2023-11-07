@@ -9,11 +9,13 @@ import (
 
 func main() {
 
-	outputs := getAllOutputs("../vpc", false)
+	// outputs := getAllOutputs("../vpc", false)
 
-	fmt.Println(string(outputs))
+	// fmt.Println(string(outputs))
 
-	getValueByKey("private_subnet_ids", parseHCL(string(outputs)))
+	// getValueByKey("private_subnet_ids", parseHCL(string(outputs)))
+
+	TerraformTemplateProcessing("../eks", "main.tf")
 
 }
 
@@ -37,10 +39,6 @@ func getAllOutputs(modulePath string, json bool) []byte {
 	return output
 }
 
-func getValueFrom(input string) string {
-	return "Processed Value: " + input
-}
-
 func parseHCL(hclData string) map[string]interface{} {
 
 	// Create a variable to hold the parsed data
@@ -56,6 +54,7 @@ func parseHCL(hclData string) map[string]interface{} {
 
 }
 
-func getValueByKey(key string, result map[string]interface{}) {
-	fmt.Println(result[key])
+func getValueByKey(key string, result map[string]interface{}) string {
+
+	return fmt.Sprintf("%v", result[key])
 }
