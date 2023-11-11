@@ -7,8 +7,8 @@ module "eks" {
 
   cluster_endpoint_public_access  = true
 
-  vpc_id                   = "vpc-0eb0cf447f3788272"
-  subnet_ids               = ["subnet-0e630bed62b4f91a9", "subnet-0168fa5aba8893464", "subnet-0cdedca684b1a779a"]
+  vpc_id                   = getValueByKey("vpc", "vpc_id")
+  subnet_ids               = getValueByKey("vpc", "public_subnet_ids")
 
   eks_managed_node_groups = {
     ondemand = {
