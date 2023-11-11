@@ -20,8 +20,10 @@ func TerraformTemplateProcessing(directory string, inputFileName string) {
 
 	defer file.Close()
 
+	// Defining regexp pattern
 	pattern := regexp.MustCompile(`getValueByKey\("([^"]+)", "([^"]+)"\)`)
 
+	// Scanning file line by line
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
