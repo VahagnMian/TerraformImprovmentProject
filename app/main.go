@@ -3,7 +3,7 @@ package main
 func main() {
 
 	refreshTerraformOutputs("vpc")
-
-	TerraformTemplateProcessing("../eks", "main.tf")
+	//refreshTerraformOutputs("vpc")
+	TerraformTemplateProcessing("../ec2", "main.tf")
 
 }
