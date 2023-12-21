@@ -70,5 +70,4 @@ func renameFile(overwriteTF bool, filePath string) {
 			fmt.Println(err1)
 		}
 	}
-
 }
