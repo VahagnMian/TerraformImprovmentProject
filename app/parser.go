@@ -8,7 +8,7 @@ import (
 	"regexp"
 )
 
-func TerraformTemplateProcessing(directory string, inputFileName string) {
+func TerraformTemplateProcessing(directory string, inputFileName string, overwriteTF bool) {
 
 	logger := initLogger()
 
@@ -41,34 +41,34 @@ func TerraformTemplateProcessing(directory string, inputFileName string) {
 		}
 
 		fmt.Println(line)
-
-		writeResultToFile(line, appendProcessedToTf("../ec2/main.tf"))
+		writeResultToFile(line, appendProcessedToTf("../ec2/main.tf"), overwriteTF)
 
 	}
+
+	renameFile(overwriteTF, appendProcessedToTf("../ec2/main.tf"))
 
 }
 
-func writeResultToFile(line string, filePath string) {
-	logger := initLogger()
-
-	// Determine file mode (create or append)
-	mode := os.O_WRONLY
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		mode |= os.O_CREATE
-	} else {
-		mode |= os.O_APPEND
-	}
-
-	// Open or create the file
-	file, err := os.OpenFile(filePath, mode, 0644)
+func writeResultToFile(line string, filePath string, overwriteTF bool) {
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		logger.Fatal("Error opening/creating file: ", err)
+		log.Fatal("Error opening/creating file: ", err)
 	}
 	defer file.Close()
 
-	// Write the line to the file
 	_, err = fmt.Fprintln(file, line)
 	if err != nil {
-		logger.Fatal("Error writing to file: ", err)
+		log.Fatal("Error writing to file: ", err)
 	}
+}
+
+func renameFile(overwriteTF bool, filePath string) {
+
+	if overwriteTF {
+		err1 := os.Rename(filePath, trimProcessedFromTf(filePath))
+		if err1 != nil {
+			fmt.Println(err1)
+		}
+	}
+
 }

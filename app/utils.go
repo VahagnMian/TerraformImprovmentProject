@@ -156,3 +156,13 @@ func appendProcessedToTf(fileName string) string {
 	return result
 
 }
+
+func trimProcessedFromTf(fileName string) string {
+
+	result := strings.TrimSuffix(fileName, "_processed.tf")
+
+	result = result + ".tf"
+
+	return result
+
+}
