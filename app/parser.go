@@ -3,24 +3,27 @@ package main
 import (
 	"bufio"
 	"fmt"
+	logger "github.com/rs/zerolog/log"
 	"log"
 	"os"
 	"regexp"
 )
 
+// Method is responsible for overwriting the terraform "template" file with the actuall passed values
 func TerraformTemplateProcessing(directory string, inputFileName string, overwriteTF bool) {
-
-	logger := initLogger()
 
 	destinationTemplateFile := directory + "/" + inputFileName
 
-	file, err := os.Open(destinationTemplateFile)
+	// Read file
+	file, err := os.Open("../" + destinationTemplateFile)
 	defer file.Close()
 
+	// Error handling
 	if err != nil {
 		log.Fatal("[ Error ] error occured during reading of: ", destinationTemplateFile, " please check if file exists, and has right permissions")
+		return
 	}
-	logger.Println("File " + destinationTemplateFile + " read successfully")
+	logger.Info().Msgf("File " + destinationTemplateFile + " read successfully")
 
 	pattern := regexp.MustCompile(`getValueByKey\("([^"]+)", "([^"]+)"\)`)
 	scanner := bufio.NewScanner(file)
@@ -36,20 +39,19 @@ func TerraformTemplateProcessing(directory string, inputFileName string, overwri
 			actualValue := getValueByKey(matches[2], parseHCL(string(outputs)))
 
 			line = pattern.ReplaceAllString(line, actualValue)
-			logger.Println("Successfully replaced functions with their actual values")
+			logger.Info().Msgf("Successfully replaced functions with their actual values")
 
 		}
 
-		fmt.Println(line)
-		writeResultToFile(line, appendProcessedToTf("../ec2/main.tf"), overwriteTF)
+		writeResultToFile(line, appendProcessedToTf("../"+directory+"/main.tf"))
 
 	}
 
-	renameFile(overwriteTF, appendProcessedToTf("../ec2/main.tf"))
+	renameFile(overwriteTF, appendProcessedToTf("../"+directory+"/main.tf"))
 
 }
 
-func writeResultToFile(line string, filePath string, overwriteTF bool) {
+func writeResultToFile(line string, filePath string) {
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal("Error opening/creating file: ", err)
