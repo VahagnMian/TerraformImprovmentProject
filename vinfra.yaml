@@ -9,7 +9,4 @@
 - ap-south-1:
   - vpc
   - eks
-  - rds:
-      - com
-      - com1:
-          - vpc1
+  - rds
