@@ -1,9 +1,12 @@
-version: 0.0.1
-params:
-  workdir: "./"
-
-components:
-  include:
-    - "eks"
-    - "rds"
-    - "vpc"
+- eu-central-1:
+  - vpc
+  - eks
+  - rds
+- us-east-1:
+  - vpc
+  - eks
+  - rds
+- ap-south-1:
+  - vpc
+  - eks
+  - rds

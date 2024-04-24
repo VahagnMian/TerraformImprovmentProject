@@ -1,10 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/hashicorp/hcl"
+	logger "github.com/rs/zerolog/log"
 	"log"
-	"os"
 	"os/exec"
 	"strings"
 )
@@ -69,15 +70,23 @@ func getValueByKey(key string, result map[string]interface{}) string {
 }
 func refreshTerraformOutputs(modulePath string) {
 
-	logger := initLogger()
-	logger.Println("Starting Terraform outputs syncing")
+	var stderr bytes.Buffer
+	logger.Info().Msgf("Starting Terraform outputs syncing")
 
-	_, err := exec.Command("terraform", "-chdir=../"+modulePath, "apply", "-refresh-only", "-auto-approve").Output()
+	cmd := exec.Command("terraform", "-chdir=../"+modulePath, "apply", "-refresh-only", "-auto-approve")
+
+	cmd.Stderr = &stderr
+
+	stdout, err := cmd.Output()
 
 	if err != nil {
-		log.Fatal("Error accured during terraform outputs syncing (refrsh apply) ", err)
+		fmt.Println(string(stdout))
+		logger.Error().Msgf("Error occurred during terraform outputs syncing (refresh apply) %v", err)
+		fmt.Println(stderr.String())
+		return
 	}
-	logger.Println("Terraform outputs refreshed (synced) successfully for " + modulePath + " module")
+
+	logger.Info().Msgf("Terraform outputs refreshed (synced) successfully for " + modulePath + " module")
 
 }
 
@@ -116,10 +125,6 @@ func checkType(s string) string {
 		return "list"
 	}
 	return "string"
-}
-
-func initLogger() *log.Logger {
-	return log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime)
 }
 
 func appendProcessedToTf(fileName string) string {
