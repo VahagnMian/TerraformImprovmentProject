@@ -2,40 +2,53 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
 
 type Config []map[string][]interface{}
 
+var workdirPath string = "../workdir/"
+
 func main() {
 
-	data, err := ioutil.ReadFile("../vinfra.yaml")
-	if err != nil {
-		fmt.Println("Error reading file:", err)
-		return
+
+
+	 files := ReadTerraformDependencies(workdirPath);
+
+	for _, v := range files {
+		fmt.Println(v)
 	}
 
-	var config Config
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
-		fmt.Println("Error unmarshaling YAML:", err)
-		return
-	}
+	
+	// refreshTerraformOutputs("workdir/eu-central-1/vpc")
+	// //refreshTerraformOutputs("vpc")
+	// TerraformTemplateProcessing("workdir/eu-central-1/ec2", "main.tf", false)
+
+
+	// data, err := ioutil.ReadFile("../vinfra.yaml")
+	// if err != nil {
+	// 	fmt.Println("Error reading file:", err)
+	// 	return
+	// }
+
+	// var config Config
+	// err = yaml.Unmarshal(data, &config)
+	// if err != nil {
+	// 	fmt.Println("Error unmarshaling YAML:", err)
+	// 	return
+	// }
 
 	// Define the root directory where you want to create the structure
-	rootDir := "./workdir"
+	//rootDir := "./workdir"
 
 	// Create and process the directory structure based on the YAML configuration
-	if err := createDirStructure(config, rootDir); err != nil {
-		fmt.Println("Error creating directory structure:", err)
-		return
-	}
+	// if err := createDirStructure(config, rootDir); err != nil {
+	// 	fmt.Println("Error creating directory structure:", err)
+	// 	return
+	// }
 
-	fmt.Println("Directory structure created successfully.")
-
+	// fmt.Println("Directory structure created successfully.")
 }
 
 func createDirStructure(config Config, basePath string) error {
