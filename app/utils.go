@@ -1,13 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"strings"
+
 	"github.com/hashicorp/hcl"
 	logger "github.com/rs/zerolog/log"
-	"log"
-	"os/exec"
-	"strings"
 )
 
 // getAllOutputs is used to get all outputs from particular module in HCL format
@@ -146,3 +151,84 @@ func trimProcessedFromTf(fileName string) string {
 	return result
 
 }
+
+
+// Get All Terraform files in directory
+func GetTerraformFiles(baseDir string) []string {
+
+	var terraformTemplatesPath = []string{}
+
+	// Define which files should be ignored
+	excludeFiles := []string{".terraform", ".terraform.lock.hcl", "terraform.tfstate", "terraform.tfstate.backup"}
+
+	// Use filepath.Walk to navigate through the directory tree
+	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// if this cycle find the file that is excluded, it will be skipped
+		for _, v := range excludeFiles {
+
+			if strings.Contains(path, v) {
+				return nil
+			}
+
+		}
+
+		// Skip all directories
+		if info.IsDir() {
+			return nil
+		}
+
+		// Print the path of the file
+
+		terraformTemplatesPath = append(terraformTemplatesPath, path)
+		//fmt.Println(terraformTemplatesPath)
+		//fmt.Println(path)
+		return nil
+	})
+
+	if err != nil {
+		fmt.Printf("error walking the path %v\n", err)
+	}
+
+	return terraformTemplatesPath
+}
+
+
+// Get dependencies in terraform files
+
+func GetDependency(tfFile string) map[string]string {
+
+	destinationTemplateFile := tfFile
+
+	// Read file
+	file, err := os.Open(tfFile)
+	defer file.Close()
+
+	// Error handling
+	if err != nil {
+		log.Fatal("[ Error ] error occured during reading of: ", destinationTemplateFile, " please check if file exists, and has right permissions")
+		os.Exit(1)
+	}
+
+	pattern := regexp.MustCompile(`getValueByKey\("([^"]+)", "([^"]+)"\)`)
+	scanner := bufio.NewScanner(file)
+
+	lines := make(map[string]string)
+	for scanner.Scan() {
+		line := scanner.Text()
+		matches := pattern.FindStringSubmatch(line)
+
+		if matches != nil {
+
+			lines[file.Name()] = line
+
+		}
+
+	}
+
+	return lines
+
+} 

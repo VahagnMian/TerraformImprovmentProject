@@ -14,11 +14,23 @@ func main() {
 
 
 
-	 files := ReadTerraformDependencies(workdirPath);
+	files := GetTerraformFiles(workdirPath);
+
+
+	//fmt.Println(files)
 
 	for _, v := range files {
-		fmt.Println(v)
+		dependencies := GetDependency(v)
+		if len(dependencies) != 0 {
+			for k, v := range dependencies {
+				fmt.Print("Path: ", k, " Value: ", v)
+			}
+		}
 	}
+
+	// for _, v := range files {
+	// 	fmt.Println(v)
+	// }
 
 	
 	// refreshTerraformOutputs("workdir/eu-central-1/vpc")

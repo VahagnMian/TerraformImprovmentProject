@@ -6,11 +6,11 @@ module "ec2_instance" {
   create_spot_instance = true
   instance_type          = "t2.micro"
   monitoring             = false
-  subnet_id              = "subnet-0ed3c309930d86048"
+  subnet_id              = getValueByKey("vpc", "public_first_subnet_id")
+  #subnet_id              = "subnet-xyz"
 
   tags = {
     Terraform   = "true"
     Environment = "dev"
   }
 }
-
