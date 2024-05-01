@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -73,12 +74,13 @@ func getValueByKey(key string, result map[string]interface{}) string {
 	return value
 
 }
-func refreshTerraformOutputs(modulePath string) {
+func refreshTerraformOutputs(modulePath string) error{
 
 	var stderr bytes.Buffer
 	logger.Info().Msgf("Starting Terraform outputs syncing")
 
-	cmd := exec.Command("terraform", "-chdir=../"+modulePath, "apply", "-refresh-only", "-auto-approve")
+	//cmd := exec.Command("terraform", "-chdir=../"+modulePath, "apply", "-refresh-only", "-auto-approve")
+	cmd := exec.Command("terraform", "-chdir=" + modulePath, "apply", "-auto-approve")
 
 	cmd.Stderr = &stderr
 
@@ -88,10 +90,12 @@ func refreshTerraformOutputs(modulePath string) {
 		fmt.Println(string(stdout))
 		logger.Error().Msgf("Error occurred during terraform outputs syncing (refresh apply) %v", err)
 		fmt.Println(stderr.String())
-		return
+		return err
 	}
 
 	logger.Info().Msgf("Terraform outputs refreshed (synced) successfully for " + modulePath + " module")
+
+	return nil
 
 }
 
@@ -232,3 +236,78 @@ func GetDependency(tfFile string) map[string]string {
 	return lines
 
 } 
+
+func extractRefModuleFromString(input string) (string, error) {
+	re, err := regexp.Compile(`getValueByKey\("([^"]+)"`)
+	if err != nil {
+		return "", err  // Handle regex compilation error
+	}
+	matches := re.FindStringSubmatch(input)
+	if len(matches) > 1 {
+		return matches[1], nil  // Return the captured group
+	}
+	return "", fmt.Errorf("no match found")
+}
+
+func getParentDirectory(filePath string) string {
+
+ 
+	parent := filepath.Dir(filePath)
+
+	return parent
+
+}
+
+func GetAllFilesInDir(dirPath string) []string {
+
+	entries, err := os.ReadDir(dirPath)
+    if err != nil {
+        log.Fatal(err)
+    }
+ 
+	files  := []string{}
+    for _, e := range entries {
+            files =  append(files, e.Name())
+    }
+
+	return files
+
+}
+
+func isValidTemplateFile(path string) bool {
+
+	b, err := ioutil.ReadFile(path)
+    if err != nil {
+        panic(err)
+    }
+    s := string(b)
+    
+	
+	return strings.Contains(s, "getValueByKey")
+
+}
+
+func applyTerraform(directory string, autoApprove bool) error {
+
+	TerraformTemplateProcessing(directory, true)
+	// Construct the terraform apply command with -chdir
+	args := []string{"-chdir=" + directory, "apply"}
+	if autoApprove {
+		args = append(args, "--auto-approve")
+	}
+
+	// Create the command with the constructed arguments
+	cmd := exec.Command("terraform", args...)
+
+	// Set output to display in the console
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Execute the command
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error executing terraform apply: %w", err)
+	}
+
+	return nil
+}

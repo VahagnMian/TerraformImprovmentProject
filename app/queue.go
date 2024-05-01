@@ -30,13 +30,10 @@ func (q *ApplyQueue) IsEmpty() bool {
 	return len(q.elements) == 0
 }
 
-func RunQueue() {
+func RunQueue(element string ) {
 	q := ApplyQueue{}
 
-	// Enqueue elements
-	q.Enqueue("A")
-	q.Enqueue("B")
-	q.Enqueue("C")
+	q.Enqueue(element)
 
 	// Dequeue elements
 	for !q.IsEmpty() {

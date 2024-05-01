@@ -12,6 +12,7 @@ var workdirPath string = "../workdir/"
 
 func main() {
 
+	q := ApplyQueue{}
 
 
 	files := GetTerraformFiles(workdirPath);
@@ -23,17 +24,44 @@ func main() {
 		dependencies := GetDependency(v)
 		if len(dependencies) != 0 {
 			for k, v := range dependencies {
-				fmt.Print("Path: ", k, " Value: ", v)
+				refModule, _ := extractRefModuleFromString(v)
+				mainModule := getParentDirectory(k)
+				refModule = getParentDirectory(mainModule) + "/" + refModule
+
+				q.Enqueue(refModule)
+				q.Enqueue(mainModule)
+
+				
 			}
 		}
 	}
 
-	// for _, v := range files {
-	// 	fmt.Println(v)
-	// }
+	fmt.Println(q.elements)
+
+	for _, v := range q.elements {
 
 	
-	// refreshTerraformOutputs("workdir/eu-central-1/vpc")
+		//TerraformTemplateProcessing(v, false)
+
+		// TerraformTemplateProcessing("../workdir/eu-central-1/ec2", false)
+		// TerraformTemplateProcessing("../workdir/eu-central-1/vpc", false)
+
+		applyTerraform(v, true)
+		// if err != nil {
+		// 	os.Exit(1)
+		// }
+
+		
+		
+	}
+	
+	// }
+
+	//refreshTerraformOutputs("workdir/eu-central-1/vpc")
+
+
+
+
 	// //refreshTerraformOutputs("vpc")
 	// TerraformTemplateProcessing("workdir/eu-central-1/ec2", "main.tf", false)
 
