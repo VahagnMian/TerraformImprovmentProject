@@ -3,19 +3,33 @@ package main
 import (
 	"bufio"
 	"fmt"
-	logger "github.com/rs/zerolog/log"
 	"log"
 	"os"
 	"regexp"
+	"strings"
+
+	logger "github.com/rs/zerolog/log"
 )
 
 // Method is responsible for overwriting the terraform "template" file with the actuall passed values
-func TerraformTemplateProcessing(directory string, inputFileName string, overwriteTF bool) {
+func TerraformTemplateProcessing(directory string, overwriteTF bool) {
 
-	destinationTemplateFile := directory + "/" + inputFileName
+	files := GetAllFilesInDir(directory)
+
+
+	for _, v := range files {
+		if strings.HasSuffix(v, ".tf") {
+	
+	
+			if !isValidTemplateFile(directory + "/" + v) {
+				continue
+			}
+			
+
+	destinationTemplateFile := directory + "/" + v
 
 	// Read file
-	file, err := os.Open("../" + destinationTemplateFile)
+	file, err := os.Open(destinationTemplateFile)
 	defer file.Close()
 
 	// Error handling
@@ -28,26 +42,41 @@ func TerraformTemplateProcessing(directory string, inputFileName string, overwri
 	pattern := regexp.MustCompile(`getValueByKey\("([^"]+)", "([^"]+)"\)`)
 	scanner := bufio.NewScanner(file)
 
+	var line string
 	for scanner.Scan() {
-		line := scanner.Text()
+		line = scanner.Text()
 		matches := pattern.FindStringSubmatch(line)
 
 		if matches != nil {
 
-			outputs := getAllOutputs("../"+matches[1], false)
+			
+			outputs := getAllOutputs("../workdir/eu-central-1/" + matches[1], false)
+			//../workdir/eu-central-1/vpc
+
+			//fmt.Println(getParentDirectory(directory) + "/" + matches[1])
+
+			//outputs := getAllOutputs(getParentDirectory(directory) + "/" + matches[1], false)
 
 			actualValue := getValueByKey(matches[2], parseHCL(string(outputs)))
 
 			line = pattern.ReplaceAllString(line, actualValue)
 			logger.Info().Msgf("Successfully replaced functions with their actual values")
 
+
 		}
 
-		writeResultToFile(line, appendProcessedToTf("../"+directory+"/main.tf"))
+		writeResultToFile(line, appendProcessedToTf(directory + "/" + v))
+
 
 	}
 
-	renameFile(overwriteTF, appendProcessedToTf("../"+directory+"/main.tf"))
+		renameFile(overwriteTF, appendProcessedToTf(directory+"/" + v))
+
+	
+
+  } // Suffix checker 
+
+}
 
 }
 
