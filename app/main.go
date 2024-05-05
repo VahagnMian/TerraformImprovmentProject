@@ -10,7 +10,19 @@ type Config []map[string][]interface{}
 
 var workdirPath string = "../workdir/"
 
-func main() {
+ func main() {
+
+// 	graph := map[string][]string{
+// 		"A": {"B"},
+// 		"B": {"C", "D", "E"},
+// 		"C": {},
+// 	}
+
+	// paths := findDependencyPaths(graph)
+	// for _, path := range paths {
+	// 	fmt.Println(path)
+	// }
+
 
 	q := ApplyQueue{}
 
@@ -18,7 +30,7 @@ func main() {
 	files := GetTerraformFiles(workdirPath);
 
 
-	//fmt.Println(files)
+	fmt.Println(files)
 
 	for _, v := range files {
 		dependencies := GetDependency(v)
@@ -39,31 +51,10 @@ func main() {
 	fmt.Println(q.elements)
 
 	for _, v := range q.elements {
-
-	
-		//TerraformTemplateProcessing(v, false)
-
-		// TerraformTemplateProcessing("../workdir/eu-central-1/ec2", false)
-		// TerraformTemplateProcessing("../workdir/eu-central-1/vpc", false)
-
 		applyTerraform(v, true)
-		// if err != nil {
-		// 	os.Exit(1)
-		// }
-
-		
-		
 	}
 	
-	// }
-
-	//refreshTerraformOutputs("workdir/eu-central-1/vpc")
-
-
-
-
-	// //refreshTerraformOutputs("vpc")
-	// TerraformTemplateProcessing("workdir/eu-central-1/ec2", "main.tf", false)
+	}
 
 
 	// data, err := ioutil.ReadFile("../vinfra.yaml")
@@ -89,7 +80,6 @@ func main() {
 	// }
 
 	// fmt.Println("Directory structure created successfully.")
-}
 
 func createDirStructure(config Config, basePath string) error {
 	for _, item := range config {

@@ -1,5 +1,5 @@
 resource "aws_db_instance" "default" {
-  allocated_storage    = ""
+  allocated_storage    = "150"
   db_subnet_group_name = aws_db_subnet_group.default.name
   db_name              = "mydb"
   engine               = "mysql"
@@ -13,7 +13,7 @@ resource "aws_db_instance" "default" {
 
 resource "aws_db_subnet_group" "default" {
   name       = "main"
-  subnet_ids = ["subnet-0ed3c309930d86048", "subnet-08efa53d05510ca49", "subnet-00db38c17caf7ab42"]
+  subnet_ids = ["subnet-06756858d8b44da6a", "subnet-028866daba4f44c24", "subnet-0eff510bd9a782b31"]
 
   tags = {
     Name = "My DB subnet group"
