@@ -32,7 +32,7 @@ func getAllOutputs(modulePath string, json bool) []byte {
 
 	output, err := cmd.Output()
 	if err != nil {
-		fmt.Println("Error executing Terraform:", err)
+		logger.Error().Msgf("Error executing Terraform:", err)
 	}
 
 	return output
@@ -188,13 +188,11 @@ func GetTerraformFiles(baseDir string) []string {
 		// Print the path of the file
 
 		terraformTemplatesPath = append(terraformTemplatesPath, path)
-		//fmt.Println(terraformTemplatesPath)
-		//fmt.Println(path)
 		return nil
 	})
 
 	if err != nil {
-		fmt.Printf("error walking the path %v\n", err)
+		logger.Error().Msgf("error walking the path %v\n", err)
 	}
 
 	return terraformTemplatesPath
@@ -213,7 +211,6 @@ func GetDependency(tfFile string) map[string]string {
 	// Error handling
 	if err != nil {
 		log.Fatal("[ Error ] error occured during reading of: ", destinationTemplateFile, " please check if file exists, and has right permissions")
-		os.Exit(1)
 	}
 
 	pattern := regexp.MustCompile(`getValueByKey\("([^"]+)", "([^"]+)"\)`)
@@ -418,8 +415,19 @@ func moveProjectToTemporaryDir(src string, dst string, excludedFiles []string) {
 
 	err := copyDirectory(src, dst, excludedFiles)
 	if err != nil {
-		fmt.Printf("Error copying directory: %v\n", err)
+		logger.Info().Msgf("Error copying directory: %v\n", err)
 	} else {
-		fmt.Println("Directory copied successfully.")
+		logger.Info().Msgf("Directory copied successfully.")
 	}
+}
+
+func GetChildDirectory(filePath string) string {
+
+	elements := []string{}
+
+	elements = strings.Split(filePath, "/")
+
+	childPath := elements[len(elements)-1]
+
+	return childPath
 }

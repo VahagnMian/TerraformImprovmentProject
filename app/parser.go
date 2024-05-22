@@ -46,7 +46,7 @@ func TerraformTemplateProcessing(directory string, overwriteTF bool) {
 
 				if matches != nil {
 
-					fmt.Printf("Terraform Template Processing function")
+					logger.Debug().Msgf("Starting... Terraform template processing")
 
 					outputs := getAllOutputs(getParentDirectory(directory)+"/"+matches[1], false)
 					//../workdir/eu-central-1/vpc
@@ -92,7 +92,7 @@ func renameFile(overwriteTF bool, filePath string) {
 	if overwriteTF {
 		err1 := os.Rename(filePath, trimProcessedFromTf(filePath))
 		if err1 != nil {
-			fmt.Println(err1)
+			fmt.Errorf("%v", err1)
 		}
 	}
 }
