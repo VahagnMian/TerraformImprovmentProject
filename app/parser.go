@@ -11,72 +11,66 @@ import (
 	logger "github.com/rs/zerolog/log"
 )
 
-// Method is responsible for overwriting the terraform "template" file with the actuall passed values
+// TerraformTemplateProcessing Method is responsible for overwriting the terraform "template" file with the actuall passed values
 func TerraformTemplateProcessing(directory string, overwriteTF bool) {
 
 	files := GetAllFilesInDir(directory)
 
-
 	for _, v := range files {
 		if strings.HasSuffix(v, ".tf") {
-	
-	
+
 			if !isValidTemplateFile(directory + "/" + v) {
 				continue
 			}
-			
 
-	destinationTemplateFile := directory + "/" + v
+			destinationTemplateFile := directory + "/" + v
 
-	// Read file
-	file, err := os.Open(destinationTemplateFile)
-	defer file.Close()
+			// Read file
+			file, err := os.Open(destinationTemplateFile)
+			defer file.Close()
 
-	// Error handling
-	if err != nil {
-		log.Fatal("[ Error ] error occured during reading of: ", destinationTemplateFile, " please check if file exists, and has right permissions")
-		return
+			// Error handling
+			if err != nil {
+				log.Fatal("[ Error ] error occured during reading of: ", destinationTemplateFile, " please check if file exists, and has right permissions")
+				return
+			}
+			logger.Info().Msgf("File " + destinationTemplateFile + " read successfully")
+
+			pattern := regexp.MustCompile(`getValueByKey\("([^"]+)", "([^"]+)"\)`)
+			scanner := bufio.NewScanner(file)
+
+			var line string
+			for scanner.Scan() {
+				line = scanner.Text()
+				matches := pattern.FindStringSubmatch(line)
+
+				if matches != nil {
+
+					fmt.Printf("Terraform Template Processing function")
+
+					outputs := getAllOutputs(getParentDirectory(directory)+"/"+matches[1], false)
+					//../workdir/eu-central-1/vpc
+
+					//fmt.Println(getParentDirectory(directory) + "/" + matches[1])
+
+					//outputs := getAllOutputs(getParentDirectory(directory) + "/" + matches[1], false)
+
+					actualValue := getValueByKey(matches[2], parseHCL(string(outputs)))
+
+					line = pattern.ReplaceAllString(line, actualValue)
+					logger.Info().Msgf("Successfully replaced functions with their actual values")
+
+				}
+
+				writeResultToFile(line, appendProcessedToTf(directory+"/"+v))
+
+			}
+
+			renameFile(overwriteTF, appendProcessedToTf(directory+"/"+v))
+
+		} // Suffix checker
+
 	}
-	logger.Info().Msgf("File " + destinationTemplateFile + " read successfully")
-
-	pattern := regexp.MustCompile(`getValueByKey\("([^"]+)", "([^"]+)"\)`)
-	scanner := bufio.NewScanner(file)
-
-	var line string
-	for scanner.Scan() {
-		line = scanner.Text()
-		matches := pattern.FindStringSubmatch(line)
-
-		if matches != nil {
-
-			
-			outputs := getAllOutputs("../workdir/eu-central-1/" + matches[1], false)
-			//../workdir/eu-central-1/vpc
-
-			//fmt.Println(getParentDirectory(directory) + "/" + matches[1])
-
-			//outputs := getAllOutputs(getParentDirectory(directory) + "/" + matches[1], false)
-
-			actualValue := getValueByKey(matches[2], parseHCL(string(outputs)))
-
-			line = pattern.ReplaceAllString(line, actualValue)
-			logger.Info().Msgf("Successfully replaced functions with their actual values")
-
-
-		}
-
-		writeResultToFile(line, appendProcessedToTf(directory + "/" + v))
-
-
-	}
-
-		renameFile(overwriteTF, appendProcessedToTf(directory+"/" + v))
-
-	
-
-  } // Suffix checker 
-
-}
 
 }
 

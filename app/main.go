@@ -10,28 +10,24 @@ type Config []map[string][]interface{}
 
 var workdirPath string = "../workdir/"
 
- func main() {
+func main() {
 
-// 	graph := map[string][]string{
-// 		"A": {"B"},
-// 		"B": {"C", "D", "E"},
-// 		"C": {},
-// 	}
+	srcDir := workdirPath
+	tempDirPath := "/Users/vahagn/Documents/TerraformImprovmentProject/tmp"
 
-	// paths := findDependencyPaths(graph)
-	// for _, path := range paths {
-	// 	fmt.Println(path)
-	// }
+	workdirPath = tempDirPath
 
+	moveProjectToTemporaryDir(srcDir, tempDirPath, []string{"*.tfstate*", ".terraform"})
 
 	q := ApplyQueue{}
 
+	files := GetTerraformFiles(workdirPath)
 
-	files := GetTerraformFiles(workdirPath);
-
-
+	fmt.Println("")
 	fmt.Println(files)
+	fmt.Println("")
 
+	// Going through all the files in specified workdir and developing queue
 	for _, v := range files {
 		dependencies := GetDependency(v)
 		if len(dependencies) != 0 {
@@ -43,43 +39,44 @@ var workdirPath string = "../workdir/"
 				q.Enqueue(refModule)
 				q.Enqueue(mainModule)
 
-				
 			}
 		}
 	}
 
-	fmt.Println(q.elements)
+	fmt.Println()
+	fmt.Println(.elements)
+	fmt.Println()
 
 	for _, v := range q.elements {
-		applyTerraform(v, true)
+		fmt.Printf(v)
+		applyTerraform(v, true, true)
 	}
-	
-	}
 
+}
 
-	// data, err := ioutil.ReadFile("../vinfra.yaml")
-	// if err != nil {
-	// 	fmt.Println("Error reading file:", err)
-	// 	return
-	// }
+//data, err := ioutil.ReadFile("../vinfra.yaml")
+//if err != nil {
+//	fmt.Println("Error reading file:", err)
+//	return
+//}
+//
+//var config Config
+//err = yaml.Unmarshal(data, &config)
+//if err != nil {
+//	fmt.Println("Error unmarshaling YAML:", err)
+//	return
+//}
 
-	// var config Config
-	// err = yaml.Unmarshal(data, &config)
-	// if err != nil {
-	// 	fmt.Println("Error unmarshaling YAML:", err)
-	// 	return
-	// }
+// Define the root directory where you want to create the structure
+//rootDir := "./workdir"
 
-	// Define the root directory where you want to create the structure
-	//rootDir := "./workdir"
+// Create and process the directory structure based on the YAML configuration
+//if err := createDirStructure(config, rootDir); err != nil {
+//	fmt.Println("Error creating directory structure:", err)
+//	return
+//}
 
-	// Create and process the directory structure based on the YAML configuration
-	// if err := createDirStructure(config, rootDir); err != nil {
-	// 	fmt.Println("Error creating directory structure:", err)
-	// 	return
-	// }
-
-	// fmt.Println("Directory structure created successfully.")
+//fmt.Println("Directory structure created successfully.")
 
 func createDirStructure(config Config, basePath string) error {
 	for _, item := range config {
