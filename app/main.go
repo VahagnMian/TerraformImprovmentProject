@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/mattn/go-colorable"
+	"github.com/rs/zerolog"
+	logger "github.com/rs/zerolog/log"
 	"os"
 	"path/filepath"
 )
@@ -11,6 +14,8 @@ type Config []map[string][]interface{}
 var workdirPath string = "../workdir/"
 
 func main() {
+
+	logger.Logger = logger.Output(zerolog.ConsoleWriter{Out: colorable.NewColorableStdout()})
 
 	srcDir := workdirPath
 	tempDirPath := "/Users/vahagn/Documents/TerraformImprovmentProject/tmp"
@@ -23,9 +28,11 @@ func main() {
 
 	files := GetTerraformFiles(workdirPath)
 
-	fmt.Println("")
-	fmt.Println(files)
-	fmt.Println("")
+	logger.Info().Msgf("All terraform configuration files found")
+	for _, file := range files {
+
+		logger.Info().Msgf("%v", file)
+	}
 
 	// Going through all the files in specified workdir and developing queue
 	for _, v := range files {
@@ -43,12 +50,9 @@ func main() {
 		}
 	}
 
-	fmt.Println()
-	fmt.Println(.elements)
-	fmt.Println()
-
 	for _, v := range q.elements {
-		fmt.Printf(v)
+
+		logger.Info().Msgf("In queue now: %v ", GetChildDirectory(v))
 		applyTerraform(v, true, true)
 	}
 
