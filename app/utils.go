@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -74,13 +75,13 @@ func getValueByKey(key string, result map[string]interface{}) string {
 	return value
 
 }
-func refreshTerraformOutputs(modulePath string) error{
+func refreshTerraformOutputs(modulePath string) error {
 
 	var stderr bytes.Buffer
 	logger.Info().Msgf("Starting Terraform outputs syncing")
 
 	//cmd := exec.Command("terraform", "-chdir=../"+modulePath, "apply", "-refresh-only", "-auto-approve")
-	cmd := exec.Command("terraform", "-chdir=" + modulePath, "apply", "-auto-approve")
+	cmd := exec.Command("terraform", "-chdir="+modulePath, "apply", "-auto-approve")
 
 	cmd.Stderr = &stderr
 
@@ -156,7 +157,6 @@ func trimProcessedFromTf(fileName string) string {
 
 }
 
-
 // Get All Terraform files in directory
 func GetTerraformFiles(baseDir string) []string {
 
@@ -200,7 +200,6 @@ func GetTerraformFiles(baseDir string) []string {
 	return terraformTemplatesPath
 }
 
-
 // Get dependencies in terraform files
 
 func GetDependency(tfFile string) map[string]string {
@@ -235,23 +234,22 @@ func GetDependency(tfFile string) map[string]string {
 
 	return lines
 
-} 
+}
 
 func extractRefModuleFromString(input string) (string, error) {
 	re, err := regexp.Compile(`getValueByKey\("([^"]+)"`)
 	if err != nil {
-		return "", err  // Handle regex compilation error
+		return "", err // Handle regex compilation error
 	}
 	matches := re.FindStringSubmatch(input)
 	if len(matches) > 1 {
-		return matches[1], nil  // Return the captured group
+		return matches[1], nil // Return the captured group
 	}
 	return "", fmt.Errorf("no match found")
 }
 
 func getParentDirectory(filePath string) string {
 
- 
 	parent := filepath.Dir(filePath)
 
 	return parent
@@ -261,14 +259,14 @@ func getParentDirectory(filePath string) string {
 func GetAllFilesInDir(dirPath string) []string {
 
 	entries, err := os.ReadDir(dirPath)
-    if err != nil {
-        log.Fatal(err)
-    }
- 
-	files  := []string{}
-    for _, e := range entries {
-            files =  append(files, e.Name())
-    }
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	files := []string{}
+	for _, e := range entries {
+		files = append(files, e.Name())
+	}
 
 	return files
 
@@ -277,19 +275,42 @@ func GetAllFilesInDir(dirPath string) []string {
 func isValidTemplateFile(path string) bool {
 
 	b, err := ioutil.ReadFile(path)
-    if err != nil {
-        panic(err)
-    }
-    s := string(b)
-    
-	
+	if err != nil {
+		panic(err)
+	}
+	s := string(b)
+
 	return strings.Contains(s, "getValueByKey")
 
 }
 
-func applyTerraform(directory string, autoApprove bool) error {
+func initTerraformDirectory(directory string) error {
+
+	args := []string{"-chdir=" + directory, "init"}
+	cmd := exec.Command("terraform", args...)
+
+	// Set output to display in the console
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Execute the command
+	err := cmd.Run()
+
+	return err
+
+}
+
+func applyTerraform(directory string, autoApprove bool, init bool) error {
 
 	TerraformTemplateProcessing(directory, true)
+
+	if init {
+		err := initTerraformDirectory(directory)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Construct the terraform apply command with -chdir
 	args := []string{"-chdir=" + directory, "apply"}
 	if autoApprove {
@@ -310,4 +331,95 @@ func applyTerraform(directory string, autoApprove bool) error {
 	}
 
 	return nil
+}
+
+func copyDirectory(srcDir, dstDir string, excludePatterns []string) error {
+	// Create the destination directory
+	err := os.MkdirAll(dstDir, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	return filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
+
+		// Modify files permissions
+		args := []string{"-R", "777", dstDir}
+
+		// Create the command with the constructed arguments
+		cmd := exec.Command("chmod", args...)
+
+		// Set output to display in the console
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		// Execute the command
+		cmd.Run()
+
+		if err != nil {
+			return err
+		}
+
+		if shouldExclude(path, info, excludePatterns) {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return err
+		}
+		dstPath := filepath.Join(dstDir, relPath)
+
+		if info.IsDir() {
+			return os.MkdirAll(dstPath, 0777)
+		}
+		return copyFile(path, dstPath)
+	})
+
+}
+
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		return err
+	}
+
+	return dstFile.Sync()
+}
+
+func shouldExclude(path string, info os.FileInfo, excludePatterns []string) bool {
+	if info.IsDir() {
+		return false
+	}
+	for _, pattern := range excludePatterns {
+		matched, err := filepath.Match(pattern, filepath.Base(path))
+		if err != nil {
+			return false
+		}
+		if matched {
+			return true
+		}
+	}
+	return false
+}
+
+func moveProjectToTemporaryDir(src string, dst string, excludedFiles []string) {
+
+	err := copyDirectory(src, dst, excludedFiles)
+	if err != nil {
+		fmt.Printf("Error copying directory: %v\n", err)
+	} else {
+		fmt.Println("Directory copied successfully.")
+	}
 }

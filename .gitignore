@@ -3,6 +3,8 @@
 
 **/.idea/
 
+tmp
+
 .terraform.lock.hcl
 
 # .tfstate files
