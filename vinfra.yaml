@@ -1,12 +1,10 @@
-- eu-central-1:
-  - vpc
-  - eks
-  - rds
-- us-east-1:
-  - vpc
-  - eks
-  - rds
-- ap-south-1:
-  - vpc
-  - eks
-  - rds
+version: v0.0.1
+
+workdir: "../workdir"
+
+structure:
+  - eu-central-1:
+    - vpc
+    - eks
+    - rds
+    - s3

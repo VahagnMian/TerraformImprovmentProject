@@ -88,9 +88,11 @@ func refreshTerraformOutputs(modulePath string) error {
 	stdout, err := cmd.Output()
 
 	if err != nil {
-		fmt.Println(string(stdout))
+		logger.Error().Msgf(string(stdout))
+		// fmt.Println()
 		logger.Error().Msgf("Error occurred during terraform outputs syncing (refresh apply) %v", err)
-		fmt.Println(stderr.String())
+		logger.Error().Msgf(stderr.String())
+		// fmt.Println()
 		return err
 	}
 
@@ -430,4 +432,12 @@ func GetChildDirectory(filePath string) string {
 	childPath := elements[len(elements)-1]
 
 	return childPath
+}
+
+func checkErr(err error, msg string) {
+	if err != nil {
+
+		logger.Error().Msgf("Error accured: %v, Error: %v", msg, err)
+		return
+	}
 }
