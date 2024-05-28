@@ -5,6 +5,8 @@
 
 tmp
 
+.env
+
 .terraform.lock.hcl
 
 # .tfstate files
