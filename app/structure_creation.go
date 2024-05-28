@@ -9,7 +9,6 @@ import (
 
 func createDirStructure(config Config, basePath string) error {
 	for _, item := range config.Structure {
-		logger.Debug().Msgf("%v", item)
 		for key, val := range item {
 			currentPath := filepath.Join(basePath, key)
 			if err := os.MkdirAll(currentPath, 0755); err != nil {

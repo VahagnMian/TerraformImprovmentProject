@@ -4,7 +4,7 @@ workdir: "../workdir"
 
 structure:
   - eu-central-1:
+    - ec2
     - vpc
-    - eks
     - rds
     - s3

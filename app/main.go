@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/mattn/go-colorable"
 	"github.com/rs/zerolog"
 	logger "github.com/rs/zerolog/log"
@@ -17,6 +18,7 @@ type Config struct {
 var config Config
 
 func main() {
+
 	logger.Logger = logger.Output(zerolog.ConsoleWriter{Out: colorable.NewColorableStdout()})
 
 	// Reading the config file and unmarshalling
@@ -31,59 +33,91 @@ func main() {
 
 	workdirPath := config.WorkdirPath
 
+	structure := config.Structure
+
 	srcDir := workdirPath
 	tempDirPath := "/Users/vahagn/Documents/TerraformImprovmentProject/tmp"
 
 	workdirPath = tempDirPath
 
+	// Move project to temporary place to not interfere original files
 	moveProjectToTemporaryDir(srcDir, tempDirPath, []string{"*.tfstate*", ".terraform"})
+	logger.Debug().Msgf("Components map structure: %v", structure)
 
-	q := ApplyQueue{}
-
-	files := GetTerraformFiles(workdirPath)
-
-	logger.Info().Msgf("All terraform configuration files found")
-	for _, file := range files {
-
-		logger.Info().Msgf("%v", file)
+	dag, err := buildDAG(workdirPath)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
 	}
 
-	for _, v := range files {
-		getParentDirectory(v)
+	dag.Print(workdirPath)
 
+	dot := dag.ToDot(workdirPath)
+	err = ioutil.WriteFile("dag.dot", []byte(dot), 0644)
+	if err != nil {
+		fmt.Println("Error writing DOT file:", err)
+		return
 	}
+	fmt.Println("DOT file written to dag.dot")
 
-	// Going through all the files in specified workdir and developing queue
-	componentsApply := make(map[string]bool)
-	for _, v := range files {
-		dependencies := GetDependency(v)
-		if len(dependencies) != 0 {
-			for k, v1 := range dependencies {
-				refModule, _ := extractRefModuleFromString(v1)
-				mainModule := getParentDirectory(k)
-				refModule = getParentDirectory(mainModule) + "/" + refModule
-
-				q.Enqueue(refModule)
-				q.Enqueue(mainModule)
-			}
+	for k, v := range dag.nodes {
+		if len(v) == 0 {
+			logger.Info().Msgf("Applying... %v", strings.TrimPrefix(k, workdirPath))
+			// applyTerraform(k, true, true)
 		} else {
-			componentsApply[getParentDirectory(v)] = true
-			q.Enqueue(getParentDirectory(v))
+			for _, dependentComponent := range v {
+				logger.Info().Msgf("Applying... %v", strings.TrimPrefix(dependentComponent, workdirPath))
+				// applyTerraform(dependentComponent, true, true)
+			}
 
 		}
 	}
 
-	components := []string{}
-	for _, v := range q.elements {
-		components = append(components, GetChildDirectory(v))
-	}
+	//q := ApplyQueue{}
 
-	logger.Info().Msgf("Pending apply: %v", strings.Join(components, ","))
+	//for _, rootComponent := range structure {
+	//	for k := range rootComponent {
+	//		logger.Debug().Msgf("%s -> %s ", k, rootComponent[k])
+	//
+	//		rootComponentPath := workdirPath + "/" + k
+	//		logger.Debug().Msgf("Processing root components... %v", rootComponentPath)
+	//
+	//		for _, subComponentElement := range rootComponent[k] {
+	//			logger.Debug().Msgf("Processing subcomponent... %v", subComponentElement)
+	//
+	//			subComponent := fmt.Sprintf("%v", subComponentElement)
+	//
+	//			// Getting files from each subdirectory and checking cross dependencies
+	//			files := GetTerraformFiles(rootComponentPath + "/" + subComponent)
+	//
+	//			for _, v := range files {
+	//				dependencies := GetDependency(v)
+	//				if len(dependencies) != 0 {
+	//					for _, v1 := range dependencies {
+	//						refModule, _ := extractRefModuleFromString(v1)
+	//
+	//						q.Enqueue(refModule)
+	//						q.Enqueue(subComponent)
+	//					}
+	//				}
+	//			}
+	//
+	//		}
+	//
+	//	}
+	//}
 
-	for _, v := range q.elements {
-
-		logger.Info().Msgf("In queue now: %v ", GetChildDirectory(v))
-		//applyTerraform(v, true, true)
-	}
+	//components := []string{}
+	//for _, v := range q.elements {
+	//	components = append(components, GetChildDirectory(v))
+	//}
+	//
+	//logger.Info().Msgf("Pending apply: %v", strings.Join(components, ","))
+	//
+	//for _, v := range q.elements {
+	//
+	//	logger.Info().Msgf("In queue now: %v ", GetChildDirectory(v))
+	//	//applyTerraform(v, true, true)
+	//}
 
 }

@@ -1,0 +1,6 @@
+digraph DAG {
+  "/eu-central-1/rds" -> "/eu-central-1/vpc";
+  "/eu-central-1/s3";
+  "/eu-central-1/vpc";
+  "/eu-central-1/ec2" -> "/eu-central-1/vpc";
+}
