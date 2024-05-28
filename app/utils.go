@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl"
+	"github.com/joho/godotenv"
 	logger "github.com/rs/zerolog/log"
 )
 
@@ -440,4 +441,19 @@ func checkErr(err error, msg string) {
 		logger.Error().Msgf("Error accured: %v, Error: %v", msg, err)
 		return
 	}
+}
+
+func LoadDotEnv(path string) {
+	if path != "" {
+		err := godotenv.Load(path)
+		if err != nil {
+			log.Fatalf("Error loading .env file: %s", err)
+		}
+	} else {
+		err := godotenv.Load(".env")
+		if err != nil {
+			log.Fatalf("Error loading .env file: %s", err)
+		}
+	}
+
 }
