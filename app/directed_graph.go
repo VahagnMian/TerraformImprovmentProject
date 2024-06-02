@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	logger "github.com/rs/zerolog/log"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -30,9 +31,11 @@ func (dag *DAG) AddNode(node string) {
 func (dag *DAG) Print(prefix string) {
 	for from, tos := range dag.nodes {
 		if len(tos) == 0 {
-			fmt.Printf("%s -> []\n", strings.TrimPrefix(from, prefix))
+			logger.Debug().Msgf("%s -> []", strings.TrimPrefix(from, prefix))
+			//fmt.Printf()
 		} else {
-			fmt.Printf("%s -> %v\n", from, tos)
+			//fmt.Printf("%s -> %v\n", from, tos)
+			logger.Debug().Msgf("%s -> %v", from, tos)
 		}
 	}
 }
@@ -41,15 +44,67 @@ func (dag *DAG) ToDot(prefix string) string {
 	dot := "digraph DAG {\n"
 	for from, tos := range dag.nodes {
 		if len(tos) == 0 {
-			dot += fmt.Sprintf("  \"%s\";\n", strings.TrimPrefix(from, prefix))
+			dot += fmt.Sprintf("  \"%s\";", strings.TrimPrefix(from, prefix))
 		} else {
 			for _, to := range tos {
-				dot += fmt.Sprintf("  \"%s\" -> \"%s\";\n", strings.TrimPrefix(from, prefix), strings.TrimPrefix(to, prefix))
+				dot += fmt.Sprintf("  \"%s\" -> \"%s\";", strings.TrimPrefix(from, prefix), strings.TrimPrefix(to, prefix))
 			}
 		}
 	}
 	dot += "}\n"
 	return dot
+}
+
+func (dag *DAG) TopologicalSort() ([]string, error) {
+	inDegree := make(map[string]int)
+	for node := range dag.nodes {
+		if _, exists := inDegree[node]; !exists {
+			inDegree[node] = 0
+		}
+		for _, neighbor := range dag.nodes[node] {
+			inDegree[neighbor]++
+		}
+	}
+
+	queue := []string{}
+	for node, degree := range inDegree {
+		if degree == 0 {
+			queue = append(queue, node)
+		}
+	}
+
+	sorted := []string{}
+	for len(queue) > 0 {
+		node := queue[0]
+		queue = queue[1:]
+		sorted = append(sorted, node)
+
+		for _, neighbor := range dag.nodes[node] {
+			inDegree[neighbor]--
+			if inDegree[neighbor] == 0 {
+				queue = append(queue, neighbor)
+			}
+		}
+	}
+
+	if len(sorted) != len(dag.nodes) {
+		return nil,
+			fmt.Errorf("Graph has a cycle")
+	}
+
+	return sorted, nil
+}
+
+func (dag *DAG) Apply() {
+	sorted, err := dag.TopologicalSort()
+	if err != nil {
+		logger.Error().Msgf("Error: ", err)
+		return
+	}
+	// Reverse the sorted order to process dependencies first
+	for i := len(sorted) - 1; i >= 0; i-- {
+		logger.Info().Msgf("Processing node: %v", sorted[i])
+	}
 }
 
 func containsTfFiles(directoryPath string) bool {
@@ -113,13 +168,3 @@ func getReferencedDirectory(content string) string {
 	}
 	return ""
 }
-
-//func main() {
-//	directoryPath := "path/to/your/workdir"
-//	dag, err := buildDAG(directoryPath)
-//	if err != nil {
-//		fmt.Println("Error:", err)
-//		return
-//	}
-//	dag.Print()
-//}
